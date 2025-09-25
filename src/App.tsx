@@ -111,6 +111,14 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex">
         {/* Sidebar */}
         <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+          {/* Academic Year Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 border-b border-blue-500">
+            <h1 className="text-sm font-bold text-white uppercase tracking-wider">
+              1st Year 2nd Semester
+            </h1>
+          </div>
+          
+          {/* Sidebar Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <h2 className="text-lg font-semibold text-gray-900">Modules</h2>
             <button
@@ -201,6 +209,14 @@ function App() {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        {/* Academic Year Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 border-b border-blue-500">
+          <h1 className="text-sm font-bold text-white uppercase tracking-wider">
+            1st Year 2nd Semester
+          </h1>
+        </div>
+        
+        {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">Modules</h2>
           <button
