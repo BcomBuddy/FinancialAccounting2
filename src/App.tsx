@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { Calculator, FileText, Users, TrendingUp, Building2, Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, FileText, Users, TrendingUp, Building2, Menu, X, LogOut } from 'lucide-react';
 import BillsOfExchange from './components/BillsOfExchange';
 import ConsignmentAccounts from './components/ConsignmentAccounts';
 import JointVenture from './components/JointVenture';
 import IncompleteRecords from './components/IncompleteRecords';
 import NonProfitOrganizations from './components/NonProfitOrganizations';
+import Login from './components/Login';
+import { AuthService } from './services/authService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase';
 
 const modules = [
   {
@@ -42,6 +46,8 @@ const modules = [
 function App() {
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -59,6 +65,46 @@ function App() {
         return null;
     }
   };
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.signOut();
+      setActiveModule(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   if (activeModule) {
     return (
@@ -128,9 +174,18 @@ function App() {
                 ← Back to Modules
               </button>
               </div>
-              <h1 className="text-xl font-bold text-gray-900">
-                {modules.find(m => m.id === activeModule)?.name}
-              </h1>
+              <div className="flex items-center space-x-4">
+                <h1 className="text-xl font-bold text-gray-900">
+                  {modules.find(m => m.id === activeModule)?.name}
+                </h1>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -205,6 +260,13 @@ function App() {
                   Interactive learning modules for advanced accounting concepts
                 </p>
               </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white hover:text-blue-100 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
             </div>
           </div>
         </header>
