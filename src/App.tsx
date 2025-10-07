@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Calculator, FileText, Users, TrendingUp, Building2, Menu, X, LogOut } from 'lucide-react';
 import BillsOfExchange from './components/BillsOfExchange';
 import ConsignmentAccounts from './components/ConsignmentAccounts';
@@ -6,9 +6,8 @@ import JointVenture from './components/JointVenture';
 import IncompleteRecords from './components/IncompleteRecords';
 import NonProfitOrganizations from './components/NonProfitOrganizations';
 import Login from './components/Login';
-import { AuthService } from './services/authService';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase';
+import ProtectedRoute from './components/ProtectedRoute';
+import { useAuth } from './hooks/useAuth';
 
 const modules = [
   {
@@ -46,8 +45,7 @@ const modules = [
 function App() {
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, ssoUser, loading, isAuthenticated, authMethod, logout, ssoLogout } = useAuth();
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -66,31 +64,41 @@ function App() {
     }
   };
 
-  // Listen for authentication state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   const handleLogin = () => {
-    setIsAuthenticated(true);
+    // This will be handled by the useAuth hook automatically
   };
 
   const handleLogout = async () => {
-    try {
-      await AuthService.signOut();
-      setActiveModule(null);
-    } catch (error) {
-      console.error('Logout error:', error);
+    if (authMethod === 'sso') {
+      ssoLogout();
+    } else {
+      await logout();
     }
+    setActiveModule(null);
+  };
+
+  // Get user display information
+  const getUserDisplayInfo = () => {
+    if (authMethod === 'sso' && ssoUser) {
+      return {
+        name: ssoUser.name,
+        email: ssoUser.email,
+        yearOfStudy: ssoUser.yearOfStudy,
+        role: ssoUser.role
+      };
+    } else if (authMethod === 'firebase' && user) {
+      return {
+        name: user.displayName || 'User',
+        email: user.email || '',
+        yearOfStudy: 'Student',
+        role: 'student'
+      };
+    }
+    return null;
   };
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -101,25 +109,26 @@ function App() {
     );
   }
 
-  // Show login page if not authenticated
+  // Show login page if not authenticated (only for Firebase auth)
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
 
   if (activeModule) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex">
         {/* Sidebar */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col`}>
           {/* Academic Year Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 border-b border-blue-500">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 border-b border-blue-500 flex-shrink-0">
             <h1 className="text-sm font-bold text-white uppercase tracking-wider">
               1st Year 2nd Semester
             </h1>
           </div>
           
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b">
+          <div className="flex items-center justify-between h-16 px-4 border-b flex-shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">Modules</h2>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -128,7 +137,7 @@ function App() {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <nav className="mt-4 px-4">
+          <nav className="mt-4 px-4 flex-1 overflow-y-auto">
             <ul className="space-y-2">
               {modules.map((module) => {
                 const Icon = module.icon;
@@ -164,7 +173,7 @@ function App() {
         )}
 
         {/* Main content */}
-        <div className="flex-1 lg:ml-0">
+        <div className="flex-1 lg:ml-64">
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -201,23 +210,25 @@ function App() {
           {renderActiveModule()}
         </main>
         </div>
-      </div>
+        </div>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col`}>
         {/* Academic Year Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 border-b border-blue-500">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 border-b border-blue-500 flex-shrink-0">
           <h1 className="text-sm font-bold text-white uppercase tracking-wider">
             1st Year 2nd Semester
           </h1>
         </div>
         
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b">
+        <div className="flex items-center justify-between h-16 px-4 border-b flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900">Modules</h2>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -226,7 +237,7 @@ function App() {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="mt-6 px-3">
+        <nav className="mt-6 px-3 flex-1 overflow-y-auto">
           <ul className="space-y-2">
             {modules.map((module) => {
               const Icon = module.icon;
@@ -258,7 +269,7 @@ function App() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-0">
+      <div className="flex-1 lg:ml-64">
         <header className="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
@@ -275,14 +286,25 @@ function App() {
                 <p className="text-lg text-blue-100">
                   Interactive learning modules for advanced accounting concepts
                 </p>
+                {(() => {
+                  const userInfo = getUserDisplayInfo();
+                  return userInfo ? (
+                    <div className="mt-3 text-sm text-blue-200">
+                      <p>Welcome, {userInfo.name}!</p>
+                      <p className="text-xs">{userInfo.email} • {userInfo.yearOfStudy} • {userInfo.role}</p>
+                    </div>
+                  ) : null;
+                })()}
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center px-4 py-2 text-sm font-medium text-white hover:text-blue-100 hover:bg-blue-700 rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-4 py-2 text-sm font-medium text-white hover:text-blue-100 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {authMethod === 'sso' ? 'Return to BcomBuddy' : 'Logout'}
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -352,6 +374,7 @@ function App() {
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
 
