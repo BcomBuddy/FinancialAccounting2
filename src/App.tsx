@@ -161,6 +161,17 @@ function App() {
                 );
               })}
             </ul>
+            
+            {/* Logout Button in Sidebar */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <LogOut className="w-5 h-5 mr-3" />
+                {authMethod === 'sso' ? 'Return to BcomBuddy' : 'Logout'}
+              </button>
+            </div>
           </nav>
         </div>
 
@@ -195,13 +206,7 @@ function App() {
                 <h1 className="text-xl font-bold text-gray-900">
                   {modules.find(m => m.id === activeModule)?.name}
                 </h1>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </button>
+                {/* Logout button removed from header - now in sidebar */}
               </div>
             </div>
           </div>
@@ -237,27 +242,40 @@ function App() {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="mt-6 px-3 flex-1 overflow-y-auto">
-          <ul className="space-y-2">
-            {modules.map((module) => {
-              const Icon = module.icon;
-              return (
-                <li key={module.id}>
-                  <button
-                    onClick={() => {
-                      setActiveModule(module.id);
-                      setSidebarOpen(false);
-                    }}
-                    className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-lg hover:scale-105 group"
-                  >
-                    <Icon className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
-                    <span className="text-left leading-tight">{module.name}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+          <nav className="mt-6 px-3 flex-1 overflow-y-auto">
+            <ul className="space-y-2">
+              {modules.map((module) => {
+                const Icon = module.icon;
+                return (
+                  <li key={module.id}>
+                    <button
+                      onClick={() => {
+                        setActiveModule(module.id);
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-lg hover:scale-105 group"
+                    >
+                      <Icon className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                      <span className="text-left leading-tight">{module.name}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            
+            {/* Logout Button in Sidebar */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:scale-105 group"
+              >
+                <LogOut className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                <span className="text-left leading-tight">
+                  {authMethod === 'sso' ? 'Return to BcomBuddy' : 'Logout'}
+                </span>
+              </button>
+            </div>
+          </nav>
       </div>
 
       {/* Overlay for mobile */}
@@ -288,7 +306,8 @@ function App() {
                 </p>
                 {(() => {
                   const userInfo = getUserDisplayInfo();
-                  return userInfo ? (
+                  // Only show user info for Firebase auth, not for SSO
+                  return userInfo && authMethod === 'firebase' ? (
                     <div className="mt-3 text-sm text-blue-200">
                       <p>Welcome, {userInfo.name}!</p>
                       <p className="text-xs">{userInfo.email} • {userInfo.yearOfStudy} • {userInfo.role}</p>
@@ -296,40 +315,35 @@ function App() {
                   ) : null;
                 })()}
               </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-white hover:text-blue-100 hover:bg-blue-700 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {authMethod === 'sso' ? 'Return to BcomBuddy' : 'Logout'}
-                </button>
-              </div>
+              {/* Logout button removed from header - now in sidebar */}
             </div>
           </div>
         </header>
 
         <main className="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
-          {/* Welcome Card */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="bg-white rounded-2xl shadow-xl p-8 mb-12 border border-blue-100">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Calculator className="w-10 h-10 text-white" />
+          {/* Welcome Card - Only show for Firebase auth, not SSO */}
+          {authMethod === 'firebase' && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+              <div className="bg-white rounded-2xl shadow-xl p-8 mb-12 border border-blue-100">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Calculator className="w-10 h-10 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Your Accounting Journey!</h2>
+                  <p className="text-gray-600 text-lg leading-relaxed mb-6 max-w-2xl mx-auto">
+                    Master advanced accounting concepts through interactive simulations. Each module provides 
+                    comprehensive theory explanations and hands-on calculators to reinforce your learning.
+                  </p>
+                  <button 
+                    onClick={() => setActiveModule('bills')}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    Start Exploring
+                  </button>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Your Accounting Journey!</h2>
-                <p className="text-gray-600 text-lg leading-relaxed mb-6 max-w-2xl mx-auto">
-                  Master advanced accounting concepts through interactive simulations. Each module provides 
-                  comprehensive theory explanations and hands-on calculators to reinforce your learning.
-                </p>
-                <button 
-                  onClick={() => setActiveModule('bills')}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Start Exploring
-                </button>
               </div>
             </div>
+          )}
 
             {/* Module Cards */}
             <div className="mb-8">
